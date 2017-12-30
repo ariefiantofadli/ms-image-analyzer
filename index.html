@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Microsoft Cognitive Service</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="page">
+    <div class="title">
+        <h2>Microsoft Computer Vision API Sample</h2>
+        <p><a href="https://github.com/fadlibotax/ms-image-analyzer" target="_blank">View code on Github</a></p>
+    </div>
+
+    <div class="container">
+        <div class="userInterface">
+            Enter the URL to an image of an image you want to analyze, the click the <strong>Analyze Image</strong> button.
+            
+            <br><br>
+            
+            Image to analyze:
+            <input type="text" name="inputImage" id="inputImage" placeholder="Enter image URL here." /> 
+            
+            <button onclick="analyzeButtonClick()">Analyze Image</button>
+
+            <br><br>
+            
+            <div class="wrapper">
+                <div class="jsonOutput">
+                    Response:
+                    <br><br>
+                    <textarea id="responseTextArea" class="UIInput"></textarea>
+                </div>
+                
+                <div class="pad"></div>
+                
+                <div class="imageDiv">
+                    Source image:<br>
+                    <span id="captionSpan"></span><br>
+                    <img id="sourceImage" src="#" onerror="common.imageLoadError()"/>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+</body>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+<script type="text/javascript" src="common.js"></script>
+
+<script type="text/javascript">
+    
+    // Enter your subscriptionKey here
+    var subscriptionKeyInput = "0718a381e6634fc6b6169bfdde22a3f0";
+
+    // Enter your subscripttionRegion here
+    // use 'westus' if you use free trial version of ComputerVisionAPI
+    var subscriptionRegionSelect = "southeastasia";
+    
+    function analyzeButtonClick() {
+
+        // Clear the display fields.
+        $("#sourceImage").attr("src", "#");
+        $("#responseTextArea").val("");
+        $("#captionSpan").text("");
+    
+        // Display the image.
+        var sourceImageUrl = $("#inputImage").val();
+        $("#sourceImage").attr("src", sourceImageUrl);
+    
+        AnalyzeImage(sourceImageUrl, $("#responseTextArea"), $("#captionSpan"));
+    }
+
+    // 
+    // 
+    function readURL(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+
+            reader.onload = function(e) {
+                $('#sourceImage').attr('src', e.target.result);
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    $("#inputImage").change(function() {
+        readURL(this);
+    });
+    // 
+    // 
+
+    function AnalyzeImage(sourceImageUrl, responseTextArea, captionSpan) {
+        // Request parameters.
+        //
+        var params = {
+            "visualFeatures": "Categories,Description,Faces",
+            "details": "",
+            "language": "en",
+        };
+
+        // Perform the REST API call.
+        $.ajax({
+            url: common.uriBasePreRegion + 
+                subscriptionRegionSelect + 
+                common.uriBasePostRegion + 
+                common.uriBaseAnalyze +
+                "?" + 
+                $.param(params),
+
+            // Request headers.
+            beforeSend: function(jqXHR){
+                jqXHR.setRequestHeader("Content-Type","application/json");
+                jqXHR.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKeyInput);
+            },
+
+            type: "POST",
+
+            // Request body.
+            data: '{"url": ' + '"' + sourceImageUrl + '"}',
+        })
+
+        .done(function(data) {
+            // Show formatted JSON on webpage.
+            responseTextArea.val(JSON.stringify(data, null, 2));
+
+            // Memecah data dan menampilkan data yang dipanggil
+            // Memanggil data data.description.caption -> Captions
+            // dan memanggil data data.faces -> Gender & Age
+            var caption = data.description.captions[0];
+            var faces = data.faces[0];
+
+            if (caption.text && caption.confidence && faces.gender && faces.age) {
+                captionSpan.text(
+                    "Caption: " + caption.text + "." + " | " +
+                    "Gender: "  + faces.gender + "." + " | " +
+                    "Age: "     + faces.age    + ".");
+            }
+        })
+
+        .fail(function(jqXHR, textStatus, errorThrown) {
+            // Prepare the error string.
+            var errorString = (errorThrown === "") ? "Error. " : errorThrown + " (" + jqXHR.status + "): ";
+            errorString += (jqXHR.responseText === "") ? "" : (jQuery.parseJSON(jqXHR.responseText).message) ? 
+                jQuery.parseJSON(jqXHR.responseText).message : jQuery.parseJSON(jqXHR.responseText).error.message;
+
+            // Put the error JSON in the response textarea.
+            responseTextArea.val(JSON.stringify(jqXHR, null, 2));
+
+            // Show the error message.
+            alert(errorString);
+        });
+    }
+</script>
