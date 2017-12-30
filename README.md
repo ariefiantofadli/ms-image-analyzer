@@ -1,6 +1,6 @@
 # Microsoft Computer Vision API - Image Analyzer
 
-This is a javascript sample from Mirosoft Computer Vision API.
+This is a javascript sample from Microsoft Computer Vision API.
 
 ![Sample](sample.png)
 
